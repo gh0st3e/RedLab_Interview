@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -28,7 +29,7 @@ type PSQLDatabase struct {
 	Host     string `required:"true" split_word:"true"`
 	Port     string `required:"true" split_word:"true"`
 	Name     string `required:"true" split_word:"true"`
-	Timeout  string `required:"true" split_word:"true"`
+	Timeout  int    `required:"true" split_word:"true"`
 	Address  string `required:"false"`
 }
 
@@ -67,7 +68,11 @@ func initPSQL() (PSQLDatabase, error) {
 	db.Host = params[PSQLDatabaseHost]
 	db.Port = params[PSQLDatabasePort]
 	db.Name = params[PSQLDatabaseName]
-	db.Timeout = params[PSQLDatabaseTimeout]
+	timeout, err := strconv.Atoi(params[PSQLDatabaseTimeout])
+	if err != nil {
+		return PSQLDatabase{}, err
+	}
+	db.Timeout = timeout
 
 	db.Address = fmt.Sprintf("%s://%s:%s@%s:%s/%s?sslmode=disable", db.Driver, db.User, db.Password, db.Host, db.Port, db.Name)
 

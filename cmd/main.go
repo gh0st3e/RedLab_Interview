@@ -2,11 +2,11 @@ package main
 
 import (
 	"errors"
-	"fmt"
-	"github.com/gh0st3e/RedLab_Interview/internal/store"
 	"os"
 
 	"github.com/gh0st3e/RedLab_Interview/internal/config"
+	"github.com/gh0st3e/RedLab_Interview/internal/store"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -38,12 +38,4 @@ func main() {
 	}
 
 	_ = userStore
-
-	productStore := store.NewProductStore()
-
-	err = productStore.DeleteProduct("600", "500")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 }

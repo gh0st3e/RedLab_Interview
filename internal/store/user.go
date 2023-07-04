@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/gh0st3e/RedLab_Interview/internal/config"
@@ -33,14 +32,9 @@ func NewUserStore(logger *logrus.Logger, cfg config.PSQLDatabase) (*UserStore, e
 
 	logger.Info("Ping PSQL - OK!")
 
-	timeout, err := strconv.Atoi(cfg.Timeout)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't init timeout: %s", err)
-	}
-
 	return &UserStore{
 		db:         db,
-		ctxTimeout: time.Second * time.Duration(timeout),
+		ctxTimeout: time.Second * time.Duration(cfg.Timeout),
 	}, nil
 }
 
