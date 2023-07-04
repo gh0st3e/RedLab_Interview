@@ -1,8 +1,16 @@
 package store
 
 import (
-	"fmt"
+	"encoding/json"
 	"os"
+	"path/filepath"
+
+	"github.com/gh0st3e/RedLab_Interview/internal/entity"
+)
+
+const (
+	FileStorage    = "files"
+	FilePermission = 0644
 )
 
 type ProductStore struct {
@@ -13,31 +21,23 @@ func NewProductStore() *ProductStore {
 }
 
 // SaveProduct func which allows to save product into dir
-func (p *ProductStore) SaveProduct(name, dirname string, data []byte) error {
-	err := os.Chdir(dirname)
+func (p *ProductStore) SaveProduct(fileName, userDir string, product entity.Product) error {
+	data, err := json.Marshal(product)
 	if err != nil {
 		return err
 	}
-	defer os.Chdir("..")
 
-	err = os.WriteFile(name+".json", data, 0644)
+	err = os.WriteFile(filepath.Join(FileStorage, userDir, fileName)+".json", data, FilePermission)
 	if err != nil {
 		return err
 	}
 
 	return err
-
 }
 
 // RetrieveProduct func which allows to get product from dir using file name
-func (p *ProductStore) RetrieveProduct(name string, dirname string) ([]byte, error) {
-	err := os.Chdir(dirname)
-	if err != nil {
-		return nil, err
-	}
-	defer os.Chdir("..")
-
-	f, err := os.Open(name)
+func (p *ProductStore) RetrieveProduct(fileName string, userDir string) (*entity.Product, error) {
+	f, err := os.Open(filepath.Join(FileStorage, userDir, fileName))
 	if err != nil {
 		return nil, err
 	}
@@ -54,25 +54,26 @@ func (p *ProductStore) RetrieveProduct(name string, dirname string) ([]byte, err
 		return nil, err
 	}
 
-	return data, nil
+	product := &entity.Product{}
+
+	err = json.Unmarshal(data, product)
+	if err != nil {
+		return nil, err
+	}
+
+	return product, nil
 }
 
 // DeleteProduct func which allows to delete product from dir
-func (p *ProductStore) DeleteProduct(name string, dirname string) error {
-	err := os.Chdir(dirname)
-	if err != nil {
-		return err
-	}
-	defer os.Chdir("..")
-
-	err = os.Remove(name)
+func (p *ProductStore) DeleteProduct(fileName string, userDir string) error {
+	err := os.Remove(filepath.Join(FileStorage, userDir, fileName))
 
 	return err
 }
 
 // RetrieveProductsByUserID func which allows to get every user's product
-func (p *ProductStore) RetrieveProductsByUserID(dirname string) ([][]byte, error) {
-	dir, err := os.Open(dirname)
+func (p *ProductStore) RetrieveProductsByUserID(userDir string) ([]entity.Product, error) {
+	dir, err := os.Open(filepath.Join(FileStorage, userDir))
 	if err != nil {
 		return nil, err
 	}
@@ -83,16 +84,15 @@ func (p *ProductStore) RetrieveProductsByUserID(dirname string) ([][]byte, error
 		return nil, err
 	}
 
-	result := make([][]byte, 0)
+	products := make([]entity.Product, len(files))
 
-	for _, file := range files {
-		data, err := p.RetrieveProduct(file.Name(), dirname)
-		fmt.Println(file.Name())
+	for i, file := range files {
+		product, err := p.RetrieveProduct(file.Name(), userDir)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, data)
+		products[i] = *product
 	}
 
-	return result, nil
+	return products, nil
 }

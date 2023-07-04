@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
@@ -35,8 +34,6 @@ func (s *UserStore) NewUser(ctx context.Context, user entity.User) (int, error) 
 		user.Password,
 		user.Name,
 		user.Email).Scan(&id)
-
-	fmt.Println(id)
 
 	return id, err
 }
