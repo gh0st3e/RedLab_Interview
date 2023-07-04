@@ -2,11 +2,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"github.com/gh0st3e/RedLab_Interview/internal/store"
 	"os"
 
 	"github.com/gh0st3e/RedLab_Interview/internal/config"
-	"github.com/gh0st3e/RedLab_Interview/internal/db"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,11 +32,18 @@ func main() {
 		return
 	}
 
-	psql, err := db.ConnectPSQL(logger, &cfg.PSQLDatabase)
+	userStore, err := store.NewUserStore(logger, cfg.PSQLDatabase)
 	if err != nil {
-		logger.Fatalf("Error while conneting DB: %s", err.Error())
-		return
+		logger.Fatalf("Error while init store: %s", err)
 	}
 
-	_ = psql
+	_ = userStore
+
+	productStore := store.NewProductStore()
+
+	err = productStore.DeleteProduct("600", "500")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }

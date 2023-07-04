@@ -14,6 +14,7 @@ const (
 	PSQLDatabaseHost     = "PSQL_DATABASE_HOST"
 	PSQLDatabasePort     = "PSQL_DATABASE_PORT"
 	PSQLDatabaseName     = "PSQL_DATABASE_NAME"
+	PSQLDatabaseTimeout  = "PSQL_DATABASE_TIMEOUT"
 )
 
 type Config struct {
@@ -27,6 +28,7 @@ type PSQLDatabase struct {
 	Host     string `required:"true" split_word:"true"`
 	Port     string `required:"true" split_word:"true"`
 	Name     string `required:"true" split_word:"true"`
+	Timeout  string `required:"true" split_word:"true"`
 	Address  string `required:"false"`
 }
 
@@ -50,6 +52,7 @@ func initPSQL() (PSQLDatabase, error) {
 		PSQLDatabaseHost:     "",
 		PSQLDatabasePort:     "",
 		PSQLDatabaseName:     "",
+		PSQLDatabaseTimeout:  "",
 	}
 
 	params, err := LookupEnvs(params)
@@ -64,6 +67,7 @@ func initPSQL() (PSQLDatabase, error) {
 	db.Host = params[PSQLDatabaseHost]
 	db.Port = params[PSQLDatabasePort]
 	db.Name = params[PSQLDatabaseName]
+	db.Timeout = params[PSQLDatabaseTimeout]
 
 	db.Address = fmt.Sprintf("%s://%s:%s@%s:%s/%s?sslmode=disable", db.Driver, db.User, db.Password, db.Host, db.Port, db.Name)
 

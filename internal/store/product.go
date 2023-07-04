@@ -11,6 +11,7 @@ import (
 const (
 	FileStorage    = "files"
 	FilePermission = 0644
+	JSONExtension  = ".json"
 )
 
 type ProductStore struct {
@@ -27,7 +28,7 @@ func (p *ProductStore) SaveProduct(fileName, userDir string, product entity.Prod
 		return err
 	}
 
-	err = os.WriteFile(filepath.Join(FileStorage, userDir, fileName)+".json", data, FilePermission)
+	err = os.WriteFile(filepath.Join(FileStorage, userDir, fileName)+JSONExtension, data, FilePermission)
 	if err != nil {
 		return err
 	}
@@ -66,9 +67,7 @@ func (p *ProductStore) RetrieveProduct(fileName string, userDir string) (*entity
 
 // DeleteProduct func which allows to delete product from dir
 func (p *ProductStore) DeleteProduct(fileName string, userDir string) error {
-	err := os.Remove(filepath.Join(FileStorage, userDir, fileName))
-
-	return err
+	return os.Remove(filepath.Join(FileStorage, userDir, fileName) + JSONExtension)
 }
 
 // RetrieveProductsByUserID func which allows to get every user's product

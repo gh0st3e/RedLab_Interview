@@ -3,26 +3,50 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strconv"
 	"time"
 
+	"github.com/gh0st3e/RedLab_Interview/internal/config"
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
-)
 
-const (
-	CtxTimeout = 5 * time.Second
+	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
 type UserStore struct {
-	db *sql.DB
+	db         *sql.DB
+	ctxTimeout time.Duration
 }
 
-func NewUserStore(db *sql.DB) *UserStore {
-	return &UserStore{db: db}
+func NewUserStore(logger *logrus.Logger, cfg config.PSQLDatabase) (*UserStore, error) {
+	connStr := cfg.Address
+	db, err := sql.Open(cfg.Driver, connStr)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't open PSQL: %s", err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return nil, fmt.Errorf("couldn't ping PSQl: %s", err)
+	}
+
+	logger.Info("Ping PSQL - OK!")
+
+	timeout, err := strconv.Atoi(cfg.Timeout)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't init timeout: %s", err)
+	}
+
+	return &UserStore{
+		db:         db,
+		ctxTimeout: time.Second * time.Duration(timeout),
+	}, nil
 }
 
 // NewUser function which allows to create (register) new user (register)
 func (s *UserStore) NewUser(ctx context.Context, user entity.User) (int, error) {
-	ctx, cancel := context.WithTimeout(ctx, CtxTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
 	defer cancel()
 
 	query := `INSERT INTO users(login,password,name,email) VALUES($1,$2,$3,$4) RETURNING ID`
@@ -40,7 +64,7 @@ func (s *UserStore) NewUser(ctx context.Context, user entity.User) (int, error) 
 
 // RetrieveUser func which allows to get user using login and password (login)
 func (s *UserStore) RetrieveUser(ctx context.Context, login, password string) (entity.User, error) {
-	ctx, cancel := context.WithTimeout(ctx, CtxTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
 	defer cancel()
 
 	query := `SELECT id,name,email FROM users WHERE login=$1 AND password=$2`
