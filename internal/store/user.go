@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
@@ -21,19 +22,23 @@ func NewUserStore(db *sql.DB) *UserStore {
 }
 
 // NewUser function which allows to create (register) new user (register)
-func (s *UserStore) NewUser(ctx context.Context, user entity.User) error {
+func (s *UserStore) NewUser(ctx context.Context, user entity.User) (int, error) {
 	ctx, cancel := context.WithTimeout(ctx, CtxTimeout)
 	defer cancel()
 
-	query := `INSERT INTO users(login,password,name,email) VALUES($1,$2,$3,$4)`
+	query := `INSERT INTO users(login,password,name,email) VALUES($1,$2,$3,$4) RETURNING ID`
 
-	_, err := s.db.ExecContext(ctx, query,
+	var id int
+
+	err := s.db.QueryRowContext(ctx, query,
 		user.Login,
 		user.Password,
 		user.Name,
-		user.Email)
+		user.Email).Scan(&id)
 
-	return err
+	fmt.Println(id)
+
+	return id, err
 }
 
 // RetrieveUser func which allows to get user using login and password (login)
