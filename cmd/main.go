@@ -32,7 +32,7 @@ func main() {
 		return
 	}
 
-	userStore, err := store.NewUserStore(logger, cfg.PSQLDatabase)
+	userStore, err := store.NewUserStore(cfg.PSQLDatabase)
 	if err != nil {
 		logger.Fatalf("Error while init store: %s", err)
 	}

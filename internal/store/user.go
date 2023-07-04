@@ -18,7 +18,7 @@ type UserStore struct {
 	ctxTimeout time.Duration
 }
 
-func NewUserStore(logger *logrus.Logger, cfg config.PSQLDatabase) (*UserStore, error) {
+func NewUserStore(cfg config.PSQLDatabase) (*UserStore, error) {
 	connStr := cfg.Address
 	db, err := sql.Open(cfg.Driver, connStr)
 	if err != nil {
@@ -30,7 +30,7 @@ func NewUserStore(logger *logrus.Logger, cfg config.PSQLDatabase) (*UserStore, e
 		return nil, fmt.Errorf("couldn't ping PSQl: %s", err)
 	}
 
-	logger.Info("Ping PSQL - OK!")
+	logrus.Info("Ping PSQL - OK!")
 
 	return &UserStore{
 		db:         db,
