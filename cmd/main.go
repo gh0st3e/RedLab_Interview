@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 
 	"github.com/gh0st3e/RedLab_Interview/internal/config"
@@ -17,8 +18,8 @@ const (
 func main() {
 	logger := logrus.New()
 
-	_, err := os.ReadDir(FileStorage)
-	if err != nil {
+	_, err := os.Open(FileStorage)
+	if errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(FileStorage, DirPermission)
 		if err != nil {
 			logger.Fatalf("Error while creating file storage: %s", err.Error())
