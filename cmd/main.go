@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gh0st3e/RedLab_Interview/internal/config"
+	"github.com/gh0st3e/RedLab_Interview/internal/service"
 	"github.com/gh0st3e/RedLab_Interview/internal/store"
 
 	"github.com/sirupsen/logrus"
@@ -36,6 +37,10 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Error while init store: %s", err)
 	}
+	productStore := store.NewProductStore()
 
-	_ = userStore
+	userService := service.NewUserService(logger, userStore)
+	_ = userService
+	productService := service.NewProductService(logger, productStore)
+	_ = productService
 }
