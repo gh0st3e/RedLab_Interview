@@ -2,8 +2,10 @@ package store
 
 import (
 	"context"
-	"errors"
+
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
+	customErrors "github.com/gh0st3e/RedLab_Interview/internal/errors"
+
 	_ "github.com/lib/pq"
 )
 
@@ -23,7 +25,7 @@ func (s *Store) NewUser(ctx context.Context, user entity.User) (int, error) {
 		user.Email).Scan(&id)
 
 	if isUniqueViolation(err) {
-		return 0, errors.New("user with this login already exists")
+		return 0, customErrors.UserAlreadyExistError
 	}
 
 	return id, err
