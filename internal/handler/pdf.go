@@ -54,7 +54,7 @@ func (h *Handler) GetPdf(c *gin.Context) {
 			return
 		}
 
-		product, err := h.service.RetrieveProduct(productID, userID)
+		product, err := h.service.RetrieveProduct(c, productID, userID)
 		if err != nil {
 			h.logger.Errorf("[GetPdf] Error while retrieving product: %s", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{

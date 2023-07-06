@@ -1,16 +1,17 @@
 package handler
 
 import (
+	"context"
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type ProductService interface {
-	SaveProduct(userID int, product entity.Product) error
-	RetrieveProduct(fileName string, userID int) (*entity.Product, error)
-	DeleteProduct(fileName string, userID int) error
-	RetrieveProductsByUserID(userID int) ([]entity.Product, error)
+	SaveProduct(ctx context.Context, product entity.Product, userID int) error
+	RetrieveProduct(ctx context.Context, barcode string, userID int) (*entity.Product, error)
+	DeleteProduct(ctx context.Context, barcode string, userID int) error
+	RetrieveProductsByUserID(ctx context.Context, userID int) ([]entity.Product, error)
 }
 
 func (h *Handler) SaveProduct(c *gin.Context) {
@@ -43,7 +44,7 @@ func (h *Handler) SaveProduct(c *gin.Context) {
 		return
 	}
 
-	err = h.service.SaveProduct(userID, product)
+	err = h.service.SaveProduct(c, product, userID)
 	if err != nil {
 		h.logger.Errorf("[SaveProduct] Couldnt save product: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -85,7 +86,7 @@ func (h *Handler) RetrieveProduct(c *gin.Context) {
 		return
 	}
 
-	product, err := h.service.RetrieveProduct(productID, userID)
+	product, err := h.service.RetrieveProduct(c, productID, userID)
 	if err != nil {
 		h.logger.Errorf("[RetrieveProduct] Error while retrieving product: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -125,7 +126,7 @@ func (h *Handler) DeleteProduct(c *gin.Context) {
 		return
 	}
 
-	err := h.service.DeleteProduct(productID, userID)
+	err := h.service.DeleteProduct(c, productID, userID)
 	if err != nil {
 		h.logger.Errorf("[DeleteProduct] Error while deleting product: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -158,9 +159,9 @@ func (h *Handler) RetrieveProductsByUserID(c *gin.Context) {
 		return
 	}
 
-	products, err := h.service.RetrieveProductsByUserID(userID)
+	products, err := h.service.RetrieveProductsByUserID(c, userID)
 	if err != nil {
-		h.logger.Errorf("[RetrieveProductsByUserID] Couldn't get user products: %s", err.Error())
+		h.logger.Errorf("[RetrieveProductsByUserID] Couldn't get user products.sql: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})

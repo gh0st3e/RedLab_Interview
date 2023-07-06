@@ -1,120 +1,97 @@
 package store
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
 )
 
-const (
-	FileStorage    = "files"
-	JSONExtension  = ".json"
-	FilePermission = 0644
-	DirPermission  = 0777
-)
-
-type ProductStore struct {
-}
-
-func NewProductStore() (*ProductStore, error) {
-	_, err := os.Open(FileStorage)
-	if errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(FileStorage, DirPermission)
-		if err != nil {
-			return nil, fmt.Errorf("error while creating file storage: %s", err.Error())
-		}
-	}
-	return &ProductStore{}, nil
-}
-
 // SaveProduct func which allows to save product into dir
-func (p *ProductStore) SaveProduct(product entity.Product) error {
-	data, err := json.Marshal(product)
-	if err != nil {
-		return err
-	}
+func (s *Store) SaveProduct(ctx context.Context, product entity.Product) error {
+	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
+	defer cancel()
 
-	strID := strconv.Itoa(product.UserID)
+	query := `INSERT INTO products(barcode,name,description,cost,user_id) VALUES($1,$2,$3,$4,$5)`
 
-	err = os.WriteFile(filepath.Join(FileStorage, strID, product.Barcode)+JSONExtension, data, FilePermission)
-	if err != nil {
-		return err
+	_, err := s.db.ExecContext(ctx, query,
+		product.Barcode,
+		product.Name,
+		product.Desc,
+		product.Cost,
+		product.UserID)
+
+	if isUniqueViolation(err) {
+		return errors.New("product with this barcode already exists")
 	}
 
 	return err
 }
 
 // RetrieveProduct func which allows to get product from dir using file name
-func (p *ProductStore) RetrieveProduct(fileName string, userID int) (*entity.Product, error) {
-	strID := strconv.Itoa(userID)
-	f, err := os.Open(filepath.Join(FileStorage, strID, fileName+JSONExtension))
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
+func (s *Store) RetrieveProduct(ctx context.Context, productID string, userID int) (*entity.Product, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
+	defer cancel()
 
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
+	query := `SELECT barcode,name,description,cost,user_id FROM products WHERE barcode=$1 AND user_id=$2`
 
-	data := make([]byte, fi.Size())
-	_, err = f.Read(data)
-	if err != nil {
-		return nil, err
-	}
+	var product entity.Product
 
-	product := &entity.Product{}
+	err := s.db.QueryRowContext(ctx, query, productID, userID).Scan(
+		&product.Barcode,
+		&product.Name,
+		&product.Desc,
+		&product.Cost,
+		&product.UserID)
 
-	err = json.Unmarshal(data, product)
-	if err != nil {
-		return nil, err
-	}
-
-	return product, nil
+	return &product, err
 }
 
 // DeleteProduct func which allows to delete product from dir
-func (p *ProductStore) DeleteProduct(fileName string, userID int) error {
-	strID := strconv.Itoa(userID)
-	return os.Remove(filepath.Join(FileStorage, strID, fileName) + JSONExtension)
+func (s *Store) DeleteProduct(ctx context.Context, productID string, userID int) error {
+	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
+	defer cancel()
+
+	query := `DELETE FROM products WHERE barcode=$1 AND user_id=$2`
+
+	res, err := s.db.ExecContext(ctx, query, productID, userID)
+
+	affectedRows, err := res.RowsAffected()
+	if affectedRows == 0 {
+		return errors.New("no such product to delete")
+	}
+
+	return err
 }
 
 // RetrieveProductsByUserID func which allows to get every user's product
-func (p *ProductStore) RetrieveProductsByUserID(userID int) ([]entity.Product, error) {
-	strID := strconv.Itoa(userID)
-	dir, err := os.Open(filepath.Join(FileStorage, strID))
+func (s *Store) RetrieveProductsByUserID(ctx context.Context, userID int) ([]entity.Product, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
+	defer cancel()
+
+	query := `SELECT barcode,name,description,cost,user_id FROM products WHERE user_id=$1`
+
+	rows, err := s.db.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
-	defer dir.Close()
 
-	files, err := dir.Readdir(-1)
-	if err != nil {
-		return nil, err
-	}
+	var products []entity.Product
 
-	products := make([]entity.Product, len(files))
+	for rows.Next() {
+		product := entity.Product{}
 
-	for i, file := range files {
-		product, err := p.RetrieveProduct(strings.Trim(file.Name(), JSONExtension), userID)
+		err := rows.Scan(
+			&product.Barcode,
+			&product.Name,
+			&product.Desc,
+			&product.Cost,
+			&product.UserID)
 		if err != nil {
 			return nil, err
 		}
-		products[i] = *product
+
+		products = append(products, product)
 	}
 
-	return products, nil
-}
-
-func (p *ProductStore) CreateUserStorage(userID int) error {
-	strID := strconv.Itoa(userID)
-
-	return os.Mkdir(filepath.Join(FileStorage, strID), DirPermission)
+	return products, err
 }

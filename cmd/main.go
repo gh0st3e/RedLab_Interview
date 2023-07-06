@@ -22,16 +22,13 @@ func main() {
 		return
 	}
 
-	userStore, err := store.NewUserStore(cfg.PSQLDatabase)
+	str, err := store.NewStore(cfg.PSQLDatabase)
 	if err != nil {
-		logger.Fatalf("Error while init user store: %s", err)
-	}
-	productStore, err := store.NewProductStore()
-	if err != nil {
-		logger.Fatalf("Error while init product store: %s", err)
+		logger.Fatalf("Error while init store: %s", err.Error())
+		return
 	}
 
-	svc := service.NewService(logger, productStore, userStore)
+	svc := service.NewService(logger, str)
 
 	tokenService := token_service.NewTokenService(logger, cfg.TokenServiceConfig)
 	err = tokenService.Ping()
