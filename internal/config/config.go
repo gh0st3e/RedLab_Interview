@@ -16,10 +16,19 @@ const (
 	PSQLDatabasePort     = "PSQL_DATABASE_PORT"
 	PSQLDatabaseName     = "PSQL_DATABASE_NAME"
 	PSQLDatabaseTimeout  = "PSQL_DATABASE_TIMEOUT"
+
+	TokenServiceProtocol = "TOKEN_SERVICE_PROTOCOL"
+	TokenServiceHost     = "TOKEN_SERVICE_HOST"
+	TokenServicePort     = "TOKEN_SERVICE_PORT"
+
+	ServerHost = "SERVER_HOST"
+	ServerPort = "SERVER_PORT"
 )
 
 type Config struct {
-	PSQLDatabase PSQLDatabase
+	PSQLDatabase       PSQLDatabase
+	TokenServiceConfig TokenServiceConfig
+	Server             Server
 }
 
 type PSQLDatabase struct {
@@ -33,6 +42,18 @@ type PSQLDatabase struct {
 	Address  string `required:"false"`
 }
 
+type TokenServiceConfig struct {
+	Protocol string `required:"true" split_word:"true"`
+	Host     string `required:"true" split_word:"true"`
+	Port     string `required:"true" split_word:"true"`
+	Address  string `required:"false"`
+}
+
+type Server struct {
+	Host string `required:"true" split_word:"true"`
+	Port string `required:"true" split_word:"true"`
+}
+
 func Init() (Config, error) {
 	var cfg = Config{}
 
@@ -41,6 +62,18 @@ func Init() (Config, error) {
 		return Config{}, err
 	}
 	cfg.PSQLDatabase = psql
+
+	tokenServiceConfig, err := initTokenService()
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.TokenServiceConfig = tokenServiceConfig
+
+	serverConfig, err := initServer()
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.Server = serverConfig
 
 	return cfg, nil
 }
@@ -77,6 +110,48 @@ func initPSQL() (PSQLDatabase, error) {
 	db.Address = fmt.Sprintf("%s://%s:%s@%s:%s/%s?sslmode=disable", db.Driver, db.User, db.Password, db.Host, db.Port, db.Name)
 
 	return db, nil
+}
+
+func initTokenService() (TokenServiceConfig, error) {
+	var params = map[string]string{
+		TokenServiceProtocol: "",
+		TokenServiceHost:     "",
+		TokenServicePort:     "",
+	}
+
+	params, err := LookupEnvs(params)
+	if err != nil {
+		return TokenServiceConfig{}, err
+	}
+
+	var tokenServiceConfig = TokenServiceConfig{}
+
+	tokenServiceConfig.Protocol = params[TokenServiceProtocol]
+	tokenServiceConfig.Host = params[TokenServiceHost]
+	tokenServiceConfig.Port = params[TokenServicePort]
+
+	tokenServiceConfig.Address = fmt.Sprintf("%s://%s:%s", tokenServiceConfig.Protocol, tokenServiceConfig.Host, tokenServiceConfig.Port)
+
+	return tokenServiceConfig, nil
+}
+
+func initServer() (Server, error) {
+	var params = map[string]string{
+		ServerHost: "",
+		ServerPort: "",
+	}
+
+	params, err := LookupEnvs(params)
+	if err != nil {
+		return Server{}, nil
+	}
+
+	var serverConfig = Server{}
+
+	serverConfig.Host = params[ServerHost]
+	serverConfig.Port = params[ServerPort]
+
+	return serverConfig, nil
 }
 
 func LookupEnvs(params map[string]string) (map[string]string, error) {
