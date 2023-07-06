@@ -6,12 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
-
-	"github.com/lib/pq"
-)
-
-const (
-	PgUniqueEntry = "23505"
 )
 
 type UserStore interface {
@@ -19,7 +13,7 @@ type UserStore interface {
 	RetrieveUser(ctx context.Context, login, password string) (entity.User, error)
 }
 
-func (s *Service) RetrieveUser(ctx context.Context, user entity.User) (*entity.User, error) {
+func (s *Service) LoginUser(ctx context.Context, user entity.User) (*entity.User, error) {
 	s.logger.Info("[RetrieveUser] started")
 
 	user, err := s.userStore.RetrieveUser(ctx, user.Login, user.Password)
@@ -35,9 +29,4 @@ func (s *Service) RetrieveUser(ctx context.Context, user entity.User) (*entity.U
 	s.logger.Info("[RetrieveUser] ended")
 
 	return &user, nil
-}
-
-func checkUnique(err error) bool {
-	pgErr, ok := err.(*pq.Error)
-	return ok && pgErr.Code == PgUniqueEntry
 }
