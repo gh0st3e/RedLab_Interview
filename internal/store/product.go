@@ -81,10 +81,10 @@ func (s *Store) RetrieveProductsByUserID(ctx context.Context, userID, limit, pag
 	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
 	defer cancel()
 
-	if page == 0 {
+	if page <= 0 {
 		page = s.defaultPage
 	}
-	if limit == 0 {
+	if limit <= 0 {
 		limit = s.defaultLimit
 	}
 
@@ -124,9 +124,9 @@ func (s *Store) RetrieveProductsByUserID(ctx context.Context, userID, limit, pag
 		products = append(products, product)
 	}
 
-	query = `SELECT COUNT(*) FROM products`
+	query = `SELECT COUNT(*) FROM products WHERE user_id=$1`
 
-	err = s.db.QueryRowContext(ctx, query).Scan(&count)
+	err = s.db.QueryRowContext(ctx, query, userID).Scan(&count)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -134,7 +134,7 @@ func (s *Store) RetrieveProductsByUserID(ctx context.Context, userID, limit, pag
 	return products, count, err
 }
 
-func (s *Store) UpdateFileLocation(ctx context.Context, fileName, barcode string) error {
+func (s *Store) UpdateFileLocation(ctx context.Context, fileName, barcode string, userID int) error {
 	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
 	defer cancel()
 

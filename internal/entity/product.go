@@ -6,6 +6,6 @@ type Product struct {
 	Desc         string `json:"desc"`
 	Cost         int    `json:"cost"`
 	UserID       int    `json:"user_id"`
-	FileLocation string `json:"fileLocation"`
-	CreatedAt    string `json:"createdAt"`
+	FileLocation string `json:"file_location"`
+	CreatedAt    string `json:"created_at"`
 }

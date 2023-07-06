@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS users
 (
-    id serial NOT NULL,
+    id SERIAL NOT NULL,
     login TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     name TEXT,

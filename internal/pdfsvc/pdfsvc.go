@@ -38,7 +38,7 @@ const (
 )
 
 type Store interface {
-	UpdateFileLocation(ctx context.Context, fileName, barcode string) error
+	UpdateFileLocation(ctx context.Context, fileName, barcode string, userID int) error
 }
 
 type PDFService struct {
@@ -170,7 +170,7 @@ func (p *PDFService) GeneratePDF(ctx context.Context, userID int, product entity
 		return "", fmt.Errorf("error while generating pdf, try later")
 	}
 
-	err = p.store.UpdateFileLocation(ctx, fileName, product.Barcode)
+	err = p.store.UpdateFileLocation(ctx, fileName, product.Barcode, userID)
 	if err != nil {
 		p.logger.Errorf("[GeneratePDF] Error while updating file location in db: %s", err.Error())
 		return "", fmt.Errorf("error,while generating pdf, try later")

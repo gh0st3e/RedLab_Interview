@@ -49,7 +49,7 @@ func (h *Handler) Mount(r *gin.Engine) {
 	productRoutes.POST("", h.SaveProduct)
 	productRoutes.GET("", h.RetrieveProductsByUserID)
 
-	pdfRoutes := api.Group("/pdf", authMiddleware.UserIdentity)
+	pdfRoutes := api.Group("/prices", authMiddleware.UserIdentity)
 	pdfRoutes.GET("/:barcode", h.GetPdfFromBarcode)
 	pdfRoutes.GET("", h.GetPdfFromName)
 }
