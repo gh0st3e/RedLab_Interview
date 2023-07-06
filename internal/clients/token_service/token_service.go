@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	PingPath     = "/ping"
-	GeneratePath = "/generate?login="
-	ValidatePath = "/validate"
+	pingPath     = "/ping"
+	generatePath = "/generate?login="
+	validatePath = "/validate"
 )
 
 type TokenService struct {
@@ -30,7 +30,7 @@ func NewTokenService(logger *logrus.Logger, cfg config.TokenServiceConfig) *Toke
 func (t *TokenService) Ping() error {
 	t.logger.Info("[Ping] started")
 
-	resp, err := http.Get(t.address + PingPath)
+	resp, err := http.Get(t.address + pingPath)
 	if err != nil {
 		t.logger.Errorf("[Ping] Error while request token service: %s", err.Error())
 		return err
@@ -53,7 +53,7 @@ func (t *TokenService) Generate(userID int) (string, error) {
 
 	strID := strconv.Itoa(userID)
 
-	resp, err := http.Get(t.address + GeneratePath + strID)
+	resp, err := http.Get(t.address + generatePath + strID)
 	if err != nil {
 		t.logger.Errorf("[Generate] Error while request token service: %s", err.Error())
 		return "", err
@@ -74,7 +74,7 @@ func (t *TokenService) Generate(userID int) (string, error) {
 func (t *TokenService) Validate(token string) error {
 	t.logger.Info("[Validate] started")
 
-	req, err := http.NewRequest("GET", t.address+ValidatePath, nil)
+	req, err := http.NewRequest("GET", t.address+validatePath, nil)
 	if err != nil {
 		t.logger.Errorf("[Validate] Failed to create request: %s", err.Error())
 		return err

@@ -31,8 +31,7 @@ func main() {
 		logger.Fatalf("Error while init product store: %s", err)
 	}
 
-	commonService := service.NewService(logger, productStore, userStore)
-	_ = commonService
+	svc := service.NewService(logger, productStore, userStore)
 
 	tokenService := token_service.NewTokenService(logger, cfg.TokenServiceConfig)
 	err = tokenService.Ping()
@@ -41,13 +40,13 @@ func main() {
 		return
 	}
 
-	jwtService := jwt.NewJWTService(logger, tokenService)
+	jwtService := jwt.NewJWTService(logger, tokenService, cfg.TokenCredentials)
 
-	Handler := handler.NewHandler(logger, commonService, jwtService)
+	hdlr := handler.NewHandler(logger, svc, jwtService)
 
 	server := gin.New()
 
-	Handler.Mount(server)
+	hdlr.Mount(server)
 
 	err = server.Run(":" + cfg.Server.Port)
 	if err != nil {

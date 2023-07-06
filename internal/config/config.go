@@ -23,12 +23,15 @@ const (
 
 	ServerHost = "SERVER_HOST"
 	ServerPort = "SERVER_PORT"
+
+	JWTSigningKey = "JWT_SIGNING_KEY"
 )
 
 type Config struct {
 	PSQLDatabase       PSQLDatabase
 	TokenServiceConfig TokenServiceConfig
 	Server             Server
+	TokenCredentials   TokenCredentials
 }
 
 type PSQLDatabase struct {
@@ -54,6 +57,10 @@ type Server struct {
 	Port string `required:"true" split_word:"true"`
 }
 
+type TokenCredentials struct {
+	SigningKey string `required:"true" split_word:"true"`
+}
+
 func Init() (Config, error) {
 	var cfg = Config{}
 
@@ -74,6 +81,12 @@ func Init() (Config, error) {
 		return Config{}, err
 	}
 	cfg.Server = serverConfig
+
+	tokenCredentials, err := initTokenCredentials()
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.TokenCredentials = tokenCredentials
 
 	return cfg, nil
 }
@@ -152,6 +165,23 @@ func initServer() (Server, error) {
 	serverConfig.Port = params[ServerPort]
 
 	return serverConfig, nil
+}
+
+func initTokenCredentials() (TokenCredentials, error) {
+	var params = map[string]string{
+		JWTSigningKey: "",
+	}
+
+	params, err := LookupEnvs(params)
+	if err != nil {
+		return TokenCredentials{}, nil
+	}
+
+	var tokenCredentials = TokenCredentials{}
+
+	tokenCredentials.SigningKey = params[JWTSigningKey]
+
+	return tokenCredentials, nil
 }
 
 func LookupEnvs(params map[string]string) (map[string]string, error) {

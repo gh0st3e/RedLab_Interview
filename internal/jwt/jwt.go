@@ -2,13 +2,10 @@ package jwt
 
 import (
 	"fmt"
+	"github.com/gh0st3e/RedLab_Interview/internal/config"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
 	"strconv"
-)
-
-const (
-	hmacSampleSecret = "256-bit-secret"
 )
 
 type TokenClient interface {
@@ -19,12 +16,14 @@ type TokenClient interface {
 type JWTService struct {
 	logger       *logrus.Logger
 	tokenService TokenClient
+	signingKey   string
 }
 
-func NewJWTService(logger *logrus.Logger, tokenService TokenClient) *JWTService {
+func NewJWTService(logger *logrus.Logger, tokenService TokenClient, tokenCredentials config.TokenCredentials) *JWTService {
 	return &JWTService{
 		logger:       logger,
 		tokenService: tokenService,
+		signingKey:   tokenCredentials.SigningKey,
 	}
 }
 
@@ -65,7 +64,7 @@ func (j *JWTService) ParseToken(tokenString string) (int, error) {
 			return nil, fmt.Errorf("[ParseToken] Unexpected signing method: %v", token.Header["alg"])
 		}
 
-		return hmacSampleSecret, nil
+		return j.signingKey, nil
 	})
 
 	claims, ok := token.Claims.(jwt.MapClaims)
