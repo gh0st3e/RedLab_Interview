@@ -2,10 +2,9 @@ package config
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
 )
 
 const (
@@ -62,6 +61,13 @@ type TokenCredentials struct {
 }
 
 func Init() (Config, error) {
+	// .env - for docker
+	// local.env -  for local load
+	err := godotenv.Load("local.env")
+	if err != nil {
+		return Config{}, err
+	}
+
 	var cfg = Config{}
 
 	psql, err := initPSQL()
@@ -187,13 +193,6 @@ func initTokenCredentials() (TokenCredentials, error) {
 func LookupEnvs(params map[string]string) (map[string]string, error) {
 	var errorMsg string
 
-	// .env - for docker
-	// local.env -  for local load
-	err := godotenv.Load("local.env")
-	if err != nil {
-		return nil, err
-	}
-
 	for i := range params {
 		envVar, ok := os.LookupEnv(i)
 		if !ok {
@@ -203,7 +202,7 @@ func LookupEnvs(params map[string]string) (map[string]string, error) {
 	}
 
 	if len(errorMsg) > 0 {
-		return nil, err
+		return nil, fmt.Errorf("%s", errorMsg)
 	}
 	return params, nil
 }

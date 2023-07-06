@@ -3,7 +3,9 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/lib/pq"
 	"time"
 
 	"github.com/gh0st3e/RedLab_Interview/internal/config"
@@ -11,6 +13,11 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	//PgUniqueEntryErrorCode postgres code for check unique violation
+	PgUniqueEntryErrorCode = "23505"
 )
 
 type UserStore struct {
@@ -53,6 +60,10 @@ func (s *UserStore) NewUser(ctx context.Context, user entity.User) (int, error) 
 		user.Name,
 		user.Email).Scan(&id)
 
+	if isUniqueViolation(err) {
+		return 0, errors.New("user with this login already exists")
+	}
+
 	return id, err
 }
 
@@ -71,4 +82,9 @@ func (s *UserStore) RetrieveUser(ctx context.Context, login, password string) (e
 		&user.Email)
 
 	return user, err
+}
+
+func isUniqueViolation(err error) bool {
+	pgErr, ok := err.(*pq.Error)
+	return ok && pgErr.Code == PgUniqueEntryErrorCode
 }

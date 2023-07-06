@@ -28,7 +28,7 @@ func (h *Handler) RegisterUser(c *gin.Context) {
 	if err != nil {
 		h.logger.Errorf("[RegisterUser] Error while register user: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
+			"error": err.Error(),
 		})
 		return
 	}
@@ -52,7 +52,7 @@ func (h *Handler) LoginUser(c *gin.Context) {
 	if err != nil {
 		h.logger.Errorf("[LoginUser] Error while login user: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
+			"error": err.Error(),
 		})
 		return
 	}

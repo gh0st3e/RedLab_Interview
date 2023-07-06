@@ -2,14 +2,14 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
-	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	PgUniqueEntry = "23505"
+var (
+	UniqueViolationError = errors.New("user with this login already exists")
 )
 
 type ServiceActions interface {
@@ -37,7 +37,7 @@ func (s *Service) RegisterUser(ctx context.Context, user entity.User) (int, erro
 	userID, err := s.userStore.NewUser(ctx, user)
 	if err != nil {
 		s.logger.Errorf("[RegisterUser] error in store: %s", err.Error())
-		if isUniqueViolation(err) {
+		if errors.As(err, &UniqueViolationError) {
 			return 0, fmt.Errorf("user with this login already exists")
 		}
 		return 0, fmt.Errorf("error while process request, try later\n%w", err)
@@ -53,9 +53,4 @@ func (s *Service) RegisterUser(ctx context.Context, user entity.User) (int, erro
 	s.logger.Info("[RegisterUser] ended")
 
 	return userID, nil
-}
-
-func isUniqueViolation(err error) bool {
-	pgErr, ok := err.(*pq.Error)
-	return ok && pgErr.Code == PgUniqueEntry
 }
