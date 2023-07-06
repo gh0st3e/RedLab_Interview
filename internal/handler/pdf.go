@@ -1,9 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
 	"github.com/gin-gonic/gin"
 	"net/http"
+)
+
+var (
+	PDFNotExistError = errors.New("couldn't find file with this name")
 )
 
 type PDFService interface {
@@ -39,18 +44,24 @@ func (h *Handler) GetPdf(c *gin.Context) {
 		return
 	}
 
-	product, err := h.service.RetrieveProduct(productID, userID)
-	if err != nil {
-		h.logger.Errorf("[GetPdf] Error while retrieving product: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	loadedPDF, err := h.pdfService.LoadPDF(userID, product.Barcode)
+	loadedPDF, err := h.pdfService.LoadPDF(userID, productID)
 	if err != nil {
 		h.logger.Warnf("[GetPdf] Error while load pdf attempt: %s", err.Error())
+		if !errors.As(err, &PDFNotExistError) {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		product, err := h.service.RetrieveProduct(productID, userID)
+		if err != nil {
+			h.logger.Errorf("[GetPdf] Error while retrieving product: %s", err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 
 		generatedPDF, err := h.pdfService.GeneratePDF(userID, *product)
 		if err != nil {

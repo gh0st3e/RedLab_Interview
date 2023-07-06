@@ -14,12 +14,15 @@ import (
 )
 
 const (
-	pdfStorage    = "pdf"
-	DirPermission = 0777
+	pdfStorage       = "pdf"
+	dirPermission    = 0777
+	fileNameTemplate = "doc_%s_%s.pdf"
 
-	FontFile   = "Font.ttf"
-	FontFamily = "Metroplex Shadow"
-	FontSize   = 20
+	fontFile   = "assets/Font.ttf"
+	fontFamily = "Metroplex Shadow"
+	fontSize   = 20
+
+	pdfTemplate = "assets/Template.pdf"
 
 	barcodeX = 40
 	barcodeY = 80
@@ -38,7 +41,7 @@ type PDFService struct {
 func NewPDFService(logger *logrus.Logger) (*PDFService, error) {
 	_, err := os.Open(pdfStorage)
 	if errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(pdfStorage, DirPermission)
+		err := os.Mkdir(pdfStorage, dirPermission)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating pdf storage: %s", err.Error())
 		}
@@ -79,7 +82,7 @@ func (p *PDFService) LoadPDF(userID int, barcode string) (string, error) {
 
 	p.logger.Info("[LoadPDF] ended")
 
-	return "", fmt.Errorf("couldn't find file with this name")
+	return "", errors.New("couldn't find file with this name")
 }
 
 func (p *PDFService) GeneratePDF(userID int, product entity.Product) (string, error) {
@@ -87,19 +90,19 @@ func (p *PDFService) GeneratePDF(userID int, product entity.Product) (string, er
 
 	pdf.Start(gopdf.Config{PageSize: gopdf.Rect{W: 420, H: 395}})
 
-	err := pdf.AddTTFFont(FontFamily, FontFile)
+	err := pdf.AddTTFFont(fontFamily, fontFile)
 	if err != nil {
 		p.logger.Errorf("[GeneratePDF] Error while load font: %s", err.Error())
 		return "", fmt.Errorf("error while generating pdf, try later")
 	}
 
-	err = pdf.SetFont(FontFamily, "", FontSize)
+	err = pdf.SetFont(fontFamily, "", fontSize)
 	if err != nil {
 		p.logger.Errorf("[GeneratePDF] Error while setting font: %s", err.Error())
 		return "", fmt.Errorf("error while generating pdf, try later")
 	}
 
-	tpl1 := pdf.ImportPage("Template.pdf", 1, "/MediaBox")
+	tpl1 := pdf.ImportPage(pdfTemplate, 1, "/MediaBox")
 
 	pdf.AddPage()
 
@@ -131,13 +134,7 @@ func (p *PDFService) GeneratePDF(userID int, product entity.Product) (string, er
 
 	strID := strconv.Itoa(userID)
 
-	err = p.checkUserFolder(strID)
-	if err != nil {
-		p.logger.Errorf("[GeneratePDF] Error while checking user folder: %s", err)
-		return "", fmt.Errorf("error, while generating pdf, try later")
-	}
-
-	fileName := filepath.Join(pdfStorage, strID, "doc_"+product.Barcode+"_"+time.Now().Format(`02-01-2006_15:01:05`)+".pdf")
+	fileName := filepath.Join(pdfStorage, strID, fmt.Sprintf(fileNameTemplate, product.Barcode, time.Now().Format(`02-01-2006_15:01:05`)))
 
 	err = pdf.WritePdf(fileName)
 	if err != nil {
@@ -151,7 +148,7 @@ func (p *PDFService) GeneratePDF(userID int, product entity.Product) (string, er
 func (p *PDFService) checkUserFolder(userID string) error {
 	_, err := os.Open(filepath.Join(pdfStorage, userID))
 	if errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(filepath.Join(pdfStorage, userID), DirPermission)
+		err := os.Mkdir(filepath.Join(pdfStorage, userID), dirPermission)
 		if err != nil {
 			return fmt.Errorf("error while creating pdf storage: %s", err.Error())
 		}
