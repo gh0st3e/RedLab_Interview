@@ -3,28 +3,38 @@ package store
 import (
 	"context"
 	"errors"
+	"fmt"
+
 	"github.com/gh0st3e/RedLab_Interview/internal/entity"
 )
 
 // SaveProduct func which allows to save product into dir
-func (s *Store) SaveProduct(ctx context.Context, product entity.Product) error {
+func (s *Store) SaveProduct(ctx context.Context, product *entity.Product) (*entity.Product, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
 	defer cancel()
 
-	query := `INSERT INTO products(barcode,name,description,cost,user_id) VALUES($1,$2,$3,$4,$5)`
+	query := `INSERT INTO products(barcode,name,description,cost,user_id) VALUES($1,$2,$3,$4,$5)
+				RETURNING barcode,name,description,cost,user_id,file_location,created_at`
 
-	_, err := s.db.ExecContext(ctx, query,
+	err := s.db.QueryRowContext(ctx, query,
 		product.Barcode,
 		product.Name,
 		product.Desc,
 		product.Cost,
-		product.UserID)
+		product.UserID).Scan(
+		&product.Barcode,
+		&product.Name,
+		&product.Desc,
+		&product.Cost,
+		&product.UserID,
+		&product.FileLocation,
+		&product.CreatedAt)
 
 	if isUniqueViolation(err) {
-		return errors.New("product with this barcode already exists")
+		return nil, errors.New("product with this barcode already exists")
 	}
 
-	return err
+	return product, err
 }
 
 // RetrieveProduct func which allows to get product from dir using file name
@@ -32,7 +42,10 @@ func (s *Store) RetrieveProduct(ctx context.Context, productID string, userID in
 	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
 	defer cancel()
 
-	query := `SELECT barcode,name,description,cost,user_id FROM products WHERE barcode=$1 AND user_id=$2`
+	query := `SELECT barcode,name,description,cost,user_id 
+				FROM products 
+				WHERE barcode=$1 AND user_id=$2
+				ORDER BY products.created_at`
 
 	var product entity.Product
 
@@ -64,18 +77,34 @@ func (s *Store) DeleteProduct(ctx context.Context, productID string, userID int)
 }
 
 // RetrieveProductsByUserID func which allows to get every user's product
-func (s *Store) RetrieveProductsByUserID(ctx context.Context, userID int) ([]entity.Product, error) {
+func (s *Store) RetrieveProductsByUserID(ctx context.Context, userID, limit, page int) ([]entity.Product, int, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
 	defer cancel()
 
-	query := `SELECT barcode,name,description,cost,user_id FROM products WHERE user_id=$1`
+	if page == 0 {
+		page = s.defaultPage
+	}
+	if limit == 0 {
+		limit = s.defaultLimit
+	}
 
-	rows, err := s.db.QueryContext(ctx, query, userID)
+	page = (page - 1) * limit
+
+	fmt.Println(page, limit)
+
+	query := `SELECT barcode, name, description, cost, user_id, file_location, created_at
+				FROM products 
+				WHERE user_id = $1
+				ORDER BY created_at DESC
+				LIMIT $2 OFFSET $3;`
+
+	rows, err := s.db.QueryContext(ctx, query, userID, limit, page)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var products []entity.Product
+	var count int
 
 	for rows.Next() {
 		product := entity.Product{}
@@ -85,13 +114,33 @@ func (s *Store) RetrieveProductsByUserID(ctx context.Context, userID int) ([]ent
 			&product.Name,
 			&product.Desc,
 			&product.Cost,
-			&product.UserID)
+			&product.UserID,
+			&product.FileLocation,
+			&product.CreatedAt)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		products = append(products, product)
 	}
 
-	return products, err
+	query = `SELECT COUNT(*) FROM products`
+
+	err = s.db.QueryRowContext(ctx, query).Scan(&count)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return products, count, err
+}
+
+func (s *Store) UpdateFileLocation(ctx context.Context, fileName, barcode string) error {
+	ctx, cancel := context.WithTimeout(ctx, s.ctxTimeout)
+	defer cancel()
+
+	query := `UPDATE products SET file_location=$1 WHERE barcode=$2`
+
+	_, err := s.db.ExecContext(ctx, query, fileName, barcode)
+
+	return err
 }

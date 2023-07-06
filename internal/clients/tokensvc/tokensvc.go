@@ -1,12 +1,14 @@
-package token_service
+package tokensvc
 
 import (
 	"errors"
-	"github.com/gh0st3e/RedLab_Interview/internal/config"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/gh0st3e/RedLab_Interview/internal/config"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (

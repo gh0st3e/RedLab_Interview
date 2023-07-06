@@ -2,11 +2,15 @@ package store
 
 import (
 	"database/sql"
+	"embed"
 	"fmt"
-	"github.com/gh0st3e/RedLab_Interview/internal/config"
-	"github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 	"time"
+
+	"github.com/gh0st3e/RedLab_Interview/internal/config"
+
+	"github.com/lib/pq"
+	"github.com/pressly/goose/v3"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -15,8 +19,10 @@ const (
 )
 
 type Store struct {
-	db         *sql.DB
-	ctxTimeout time.Duration
+	db           *sql.DB
+	ctxTimeout   time.Duration
+	defaultLimit int
+	defaultPage  int
 }
 
 func NewStore(cfg config.PSQLDatabase) (*Store, error) {
@@ -33,10 +39,34 @@ func NewStore(cfg config.PSQLDatabase) (*Store, error) {
 
 	logrus.Info("Ping PSQL - OK!")
 
+	err = migrateTables(db)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't migrate tables: %s", err)
+	}
+
 	return &Store{
-		db:         db,
-		ctxTimeout: time.Second * time.Duration(cfg.Timeout),
+		db:           db,
+		ctxTimeout:   time.Second * time.Duration(cfg.Timeout),
+		defaultLimit: cfg.DefaultLimit,
+		defaultPage:  cfg.DefaultPage,
 	}, nil
+}
+
+//go:embed migrations/tables/*.sql
+var embedTablesMigrations embed.FS
+
+func migrateTables(db *sql.DB) error {
+
+	goose.SetBaseFS(embedTablesMigrations)
+
+	err := goose.SetDialect("postgres")
+	if err != nil {
+		return err
+	}
+
+	err = goose.Up(db, "migrations/tables", goose.WithAllowMissing())
+
+	return err
 }
 
 func isUniqueViolation(err error) bool {

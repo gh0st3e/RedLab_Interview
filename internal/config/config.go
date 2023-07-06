@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -15,6 +16,9 @@ const (
 	PSQLDatabasePort     = "PSQL_DATABASE_PORT"
 	PSQLDatabaseName     = "PSQL_DATABASE_NAME"
 	PSQLDatabaseTimeout  = "PSQL_DATABASE_TIMEOUT"
+
+	DefaultQueryLimit = "DEFAULT_QUERY_LIMIT"
+	DefaultQueryPage  = "DEFAULT_QUERY_PAGE"
 
 	TokenServiceProtocol = "TOKEN_SERVICE_PROTOCOL"
 	TokenServiceHost     = "TOKEN_SERVICE_HOST"
@@ -34,14 +38,16 @@ type Config struct {
 }
 
 type PSQLDatabase struct {
-	Driver   string `required:"true" split_word:"true"`
-	User     string `required:"true" split_word:"true"`
-	Password string `required:"true" split_word:"true"`
-	Host     string `required:"true" split_word:"true"`
-	Port     string `required:"true" split_word:"true"`
-	Name     string `required:"true" split_word:"true"`
-	Timeout  int    `required:"true" split_word:"true"`
-	Address  string `required:"false"`
+	Driver       string `required:"true" split_word:"true"`
+	User         string `required:"true" split_word:"true"`
+	Password     string `required:"true" split_word:"true"`
+	Host         string `required:"true" split_word:"true"`
+	Port         string `required:"true" split_word:"true"`
+	Name         string `required:"true" split_word:"true"`
+	Timeout      int    `required:"true" split_word:"true"`
+	DefaultLimit int    `required:"true" split_word:"true"`
+	DefaultPage  int    `required:"true" split_word:"true"`
+	Address      string `required:"false"`
 }
 
 type TokenServiceConfig struct {
@@ -106,6 +112,8 @@ func initPSQL() (PSQLDatabase, error) {
 		PSQLDatabasePort:     "",
 		PSQLDatabaseName:     "",
 		PSQLDatabaseTimeout:  "",
+		DefaultQueryLimit:    "",
+		DefaultQueryPage:     "",
 	}
 
 	params, err := LookupEnvs(params)
@@ -120,11 +128,24 @@ func initPSQL() (PSQLDatabase, error) {
 	db.Host = params[PSQLDatabaseHost]
 	db.Port = params[PSQLDatabasePort]
 	db.Name = params[PSQLDatabaseName]
+
 	timeout, err := strconv.Atoi(params[PSQLDatabaseTimeout])
 	if err != nil {
 		return PSQLDatabase{}, err
 	}
 	db.Timeout = timeout
+
+	limit, err := strconv.Atoi(params[DefaultQueryLimit])
+	if err != nil {
+		return PSQLDatabase{}, err
+	}
+	db.DefaultLimit = limit
+
+	page, err := strconv.Atoi(params[DefaultQueryPage])
+	if err != nil {
+		return PSQLDatabase{}, err
+	}
+	db.DefaultPage = page
 
 	db.Address = fmt.Sprintf("%s://%s:%s@%s:%s/%s?sslmode=disable", db.Driver, db.User, db.Password, db.Host, db.Port, db.Name)
 

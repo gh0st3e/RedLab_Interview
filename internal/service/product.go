@@ -5,18 +5,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/gh0st3e/RedLab_Interview/internal/entity"
 	"os"
+
+	"github.com/gh0st3e/RedLab_Interview/internal/entity"
 )
 
 type ProductStore interface {
-	SaveProduct(ctx context.Context, product entity.Product) error
+	SaveProduct(ctx context.Context, product *entity.Product) (*entity.Product, error)
 	RetrieveProduct(ctx context.Context, productID string, userID int) (*entity.Product, error)
 	DeleteProduct(ctx context.Context, productID string, userID int) error
-	RetrieveProductsByUserID(ctx context.Context, userID int) ([]entity.Product, error)
+	RetrieveProductsByUserID(ctx context.Context, userID, limit, page int) ([]entity.Product, int, error)
 }
 
-func (s *Service) SaveProduct(ctx context.Context, product entity.Product, userID int) error {
+func (s *Service) SaveProduct(ctx context.Context, product *entity.Product, userID int) (*entity.Product, error) {
 	s.logger.Info("[SaveProduct] started")
 
 	product.UserID = userID
@@ -25,18 +26,18 @@ func (s *Service) SaveProduct(ctx context.Context, product entity.Product, userI
 	fmt.Println(exProduct)
 	if exProduct.Barcode != "" {
 		s.logger.Info("[SaveProduct] product with this barcode already exists")
-		return fmt.Errorf("product with this barcode already exists")
+		return nil, fmt.Errorf("product with this barcode already exists")
 	}
 
-	err = s.store.SaveProduct(ctx, product)
+	product, err = s.store.SaveProduct(ctx, product)
 	if err != nil {
 		s.logger.Errorf("[SaveProduct] error while saving product: %s", err.Error())
-		return fmt.Errorf("error while saving product, try later\n%w", err)
+		return nil, fmt.Errorf("error while saving product, try later\n%w", err)
 	}
 
 	s.logger.Info("[SaveProduct] ended")
 
-	return nil
+	return product, nil
 }
 
 func (s *Service) RetrieveProduct(ctx context.Context, barcode string, userID int) (*entity.Product, error) {
@@ -74,17 +75,17 @@ func (s *Service) DeleteProduct(ctx context.Context, barcode string, userID int)
 	return nil
 }
 
-func (s *Service) RetrieveProductsByUserID(ctx context.Context, userID int) ([]entity.Product, error) {
+func (s *Service) RetrieveProductsByUserID(ctx context.Context, userID, limit, page int) ([]entity.Product, int, error) {
 	s.logger.Info("[RetrieveProductsByUserID] started")
 
-	products, err := s.store.RetrieveProductsByUserID(ctx, userID)
+	products, count, err := s.store.RetrieveProductsByUserID(ctx, userID, limit, page)
 	if err != nil {
 		s.logger.Errorf("[RetrieveProductsByUserID] error while retrieving products.sql: %s", err.Error())
-		return nil, err
+		return nil, 0, err
 	}
 
 	s.logger.Info(products)
 	s.logger.Info("[RetrieveProductsByUserID] ended")
 
-	return products, nil
+	return products, count, nil
 }

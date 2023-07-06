@@ -3,7 +3,8 @@ package handler
 import (
 	"github.com/gh0st3e/RedLab_Interview/internal/handler/middleware"
 	"github.com/gh0st3e/RedLab_Interview/internal/jwt"
-	"github.com/gh0st3e/RedLab_Interview/internal/pdf_service"
+	"github.com/gh0st3e/RedLab_Interview/internal/pdfsvc"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -24,7 +25,7 @@ type Handler struct {
 	pdfService PDFService
 }
 
-func NewHandler(logger *logrus.Logger, service Service, jwtService *jwt.JWTService, pdfService *pdf_service.PDFService) *Handler {
+func NewHandler(logger *logrus.Logger, service Service, jwtService *jwt.JWTService, pdfService *pdfsvc.PDFService) *Handler {
 	return &Handler{
 		logger:     logger,
 		service:    service,
@@ -49,5 +50,6 @@ func (h *Handler) Mount(r *gin.Engine) {
 	productRoutes.GET("", h.RetrieveProductsByUserID)
 
 	pdfRoutes := api.Group("/pdf", authMiddleware.UserIdentity)
-	pdfRoutes.GET("/:barcode", h.GetPdf)
+	pdfRoutes.GET("/:barcode", h.GetPdfFromBarcode)
+	pdfRoutes.GET("", h.GetPdfFromName)
 }
