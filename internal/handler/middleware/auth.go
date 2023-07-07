@@ -60,7 +60,7 @@ func (a *AuthMiddleware) UserIdentity(ctx *gin.Context) {
 		fmt.Println(err)
 		fmt.Println(TokenExpiredErr)
 		a.logger.Errorf("[UserIdentity] error while validating token %s", err)
-		if errors.As(err, &TokenExpiredErr) {
+		if errors.Is(err, TokenExpiredErr) {
 			ctx.JSON(http.StatusForbidden, gin.H{"error": "token is expired, pls login again"})
 			ctx.Abort()
 			return

@@ -23,10 +23,14 @@ func (s *Service) SaveProduct(ctx context.Context, product *entity.Product, user
 	product.UserID = userID
 
 	exProduct, err := s.store.RetrieveProduct(ctx, product.Barcode, userID)
-	fmt.Println(exProduct)
+	s.logger.Info(exProduct)
 	if exProduct.Barcode != "" {
-		s.logger.Info("[SaveProduct] product with this barcode already exists")
+		s.logger.Warn("[SaveProduct] product with this barcode already exists")
 		return nil, customErrors.ProductAlreadyExistError
+	}
+	if err != nil {
+		s.logger.Errorf("[SaveProduct] error while checking product for existing")
+		return nil, fmt.Errorf("error while saving product, try later\n%w", err)
 	}
 
 	product, err = s.store.SaveProduct(ctx, product)
@@ -64,7 +68,7 @@ func (s *Service) DeleteProduct(ctx context.Context, barcode string, userID int)
 	err := s.store.DeleteProduct(ctx, barcode, userID)
 	if err != nil {
 		s.logger.Errorf("[DeleteProduct] error while deleting: %s", err)
-		if errors.As(err, &customErrors.NoProductToDeleteError) {
+		if errors.Is(err, customErrors.NoProductToDeleteError) {
 			return customErrors.NoProductToDeleteError
 		}
 		return fmt.Errorf("error while deleting\n%w", err)
