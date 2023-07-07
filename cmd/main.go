@@ -21,6 +21,8 @@ func main() {
 		logger.Fatalf("Error while load config: %s", err.Error())
 	}
 
+	logger.Info(cfg.PSQLDatabase.Address)
+
 	repo, err := store.NewStore(cfg.PSQLDatabase)
 	if err != nil {
 		logger.Fatalf("Error while init store: %s", err.Error())
